@@ -1,0 +1,8 @@
+# General Intellij files
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Non-source python files
+*.py[cod]
