@@ -1,15 +1,4 @@
-"""
-sphinx-JDLinker is a custom sphinx extension designed to create a role that will allow you to create links to a JavaDoc
-website from your sphinx documentation.
-
-Found an issue with sphinx-JDLinker? Report it to the sphinx-JDLinker GitHub repository.
-Make sure to include a description of what went wrong, including the javadoc role used (i.e. the
-:javadoc:`some.package.SomeClass` thing), the actual displayed text output, and the actual javadoc link output, if
-possible.
-"""
 from docutils import nodes, utils
-
-__version = '1.0'
 
 
 def javadoc_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
@@ -337,10 +326,3 @@ def strip_generic_url(url):
         return before_generic + after_generic
     # If there was no generic in the url, then we have no worries.
     return url
-
-
-def setup(app):
-    app.info('Initializing sphinx-JDLinker version ' + __version + '!')
-    app.add_role('javadoc', javadoc_role)
-    app.add_config_value('javadoc_links', [], 'env')
-    return {'version': __version}

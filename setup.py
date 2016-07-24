@@ -1,6 +1,6 @@
 from setuptools import setup
 
-long_description="""
+long_description = """
 A custom sphinx extension that will allow you to link to the JavaDocs for your project from your documentation.
 
 Please see the `GitHub repository <https://github.com/12AwsomeMan34/sphinx-JDLinker>`__ for more information.
@@ -8,7 +8,8 @@ Please see the `GitHub repository <https://github.com/12AwsomeMan34/sphinx-JDLin
 
 setup(
     name='sphinx-JDLinker',
-    version='0.1',
+    packages=['jdlinker'],
+    version='1.0.4',
     license='MIT',
     description='A sphinx extension designed to allow you to create links to a JavaDoc website from your sphinx'
                 ' documentation.',

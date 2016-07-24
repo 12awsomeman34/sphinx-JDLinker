@@ -6,3 +6,8 @@
 
 # Non-source python files
 *.py[cod]
+
+# Distribution folders
+dist/
+build/
+sphinx_JDLinker.egg-info/
