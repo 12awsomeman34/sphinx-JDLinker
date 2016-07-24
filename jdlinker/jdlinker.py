@@ -8,6 +8,9 @@ def javadoc_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
     if not javadoc_links:
         return error(inliner, lineno, rawtext, 'The JavaDoc links have not been set in the configuration!')
 
+    # If we should dump the javadoc links to a file. We'll use this value later, once we actually have the javadoc link.
+    dump_links = inliner.document.settings.env.app.config.javadoc_dump
+
     # Replace any new lines and spaces. This will allow input spanning multiple lines and the spaces have no real
     # effect in the calculation of the display text and the final javadoc link.
     text = text.replace('\n', '').replace(' ', '')
@@ -139,8 +142,7 @@ def javadoc_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
         # Create a url using the javadoc url specified in the config, as well as all of the text before the
         # parenthesis replaced with dashes.
         url_text = jd_url_link + text_before_parenthesis.replace('.', '/') + '.html'
-        return [nodes.reference(rawtext, utils.unescape(last_object), refuri=strip_generic_url(url_text), **options)],\
-               []
+        return handle_return(last_object, url_text, rawtext, options, dump_links)
     # If this is not a method or a field, yet is an internal link, then we create a link for an internal javadoc!
     elif not method_text and not field_text and internal_package:
         # Combine the second to last object and the last object to form the display text.
@@ -148,8 +150,7 @@ def javadoc_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
         # With this, we append the internal package to the url, as well as throw on our already existing javadoc display
         # text.
         url_text = jd_url_link + internal_package.replace('.', '/') + javadoc_text + '.html'
-        return [nodes.reference(rawtext, utils.unescape(javadoc_text), refuri=strip_generic_url(url_text), **options)],\
-               []
+        return handle_return(javadoc_text, url_text, rawtext, options, dump_links)
     # Else if this is a method and is not an internal link, then link to a standard method.
     elif method_text and not internal_package:
         # Create the display text by combining the 'last object' with the method and any text from inside the
@@ -165,8 +166,7 @@ def javadoc_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
         # text and bring them together to form our method url!
         url_text = jd_url_link + text_before_parenthesis_before_last_dot.replace('.', '/') + last_object + '.html#' +\
             method_text + url_method_text
-        return [nodes.reference(rawtext, utils.unescape(javadoc_text), refuri=strip_generic_url(url_text), **options)],\
-               []
+        return handle_return(javadoc_text, url_text, rawtext, options, dump_links)
     # Else if this is a method and is an internal class reference...
     elif method_text and internal_package:
         # Combine the section to last object with the last object (the internal class). Then append the method to it.
@@ -176,8 +176,7 @@ def javadoc_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
         # reference to it and then the .html#. We then just add the method to the end of that.
         url_text = jd_url_link + internal_package.replace('.', '/') + text_before_parenthesis_second_to_last_object +\
             '.' + last_object + '.html#' + method_text + in_method_link(text_inside_parenthesis)
-        return [nodes.reference(rawtext, utils.unescape(javadoc_text), refuri=strip_generic_url(url_text), **options)],\
-               []
+        return handle_return(javadoc_text, url_text, rawtext, options, dump_links)
     # Else if this is a field and not an internal class reference...
     elif field_text and not internal_package:
         # Create the javadoc text by adding the last object and the field text together.
@@ -188,8 +187,7 @@ def javadoc_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
         # standard .html#. Then we just add the field text to the end of that.
         url_text = jd_url_link + text_before_parenthesis_before_last_dot.replace('.', '/') + last_object + '.html#' +\
             field_text
-        return [nodes.reference(rawtext, utils.unescape(javadoc_text), refuri=strip_generic_url(url_text), **options)],\
-               []
+        return handle_return(javadoc_text, url_text, rawtext, options, dump_links)
     # Else if this is a field in an internal class...
     elif field_text and internal_package:
         # Create the display text by combining the second to last object with the last object and the field text.
@@ -198,9 +196,7 @@ def javadoc_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
         # text before the last object and the last object with the standard .html# and the field text...
         url_text = jd_url_link + internal_package.replace('.', '/') + text_before_parenthesis_second_to_last_object +\
             '.' + last_object + '.html#' + field_text
-        return [nodes.reference(rawtext, utils.unescape(javadoc_text), refuri=strip_generic_url(url_text), **options)],\
-               []
-
+        return handle_return(javadoc_text, url_text, rawtext, options, dump_links)
     return error(inliner, lineno, rawtext, 'Could not parse the javadoc role! Are you certain that your input is'
                                            'correct?')
 
@@ -326,3 +322,12 @@ def strip_generic_url(url):
         return before_generic + after_generic
     # If there was no generic in the url, then we have no worries.
     return url
+
+
+def handle_return(javadoc_text, url, rawtext, options, dump_links):
+    # If we need to dump the links, then do so.
+    if dump_links:
+        # Open the file in a mode, write the javadoc display text and the url text to the file.
+        open('javadoc_dump.txt', 'a').write(javadoc_text + '=' + url + '\n')
+
+    return [nodes.reference(rawtext, utils.unescape(javadoc_text), refuri=strip_generic_url(url), **options)], []
