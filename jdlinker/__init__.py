@@ -1,6 +1,6 @@
-from jdlinker import javadoc_role
+from .jdlinker import javadoc_role
 
-__version = '1.0.4'
+__version = '1.0.5'
 
 
 def setup(app):
