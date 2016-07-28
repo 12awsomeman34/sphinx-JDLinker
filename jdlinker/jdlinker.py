@@ -1,4 +1,21 @@
 from docutils import nodes, utils
+from docutils.parsers.rst import Directive
+
+
+javadoc_imports = dict()
+
+
+class JavaDocImportDirective(Directive):
+
+    # Allow content in the directive.
+    has_content = True
+
+    def run(self):
+        # Add a dictionary entry using the file from which this directive originates and the content of that directive.
+        # Note that one specific page will only ever have one import directive, so it's okay to potentially overwrite an
+        # existing key value here.
+        javadoc_imports[self.state.document.settings.env.docname] = self.content
+        return []
 
 
 def javadoc_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
@@ -14,6 +31,9 @@ def javadoc_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
     # Replace any new lines and spaces. This will allow input spanning multiple lines and the spaces have no real
     # effect in the calculation of the display text and the final javadoc link.
     text = text.replace('\n', '').replace(' ', '')
+
+    # Handle any possible imports.
+    text = handle_imports(text, inliner.document.settings.env.docname)
 
     # A boolean value on whether there is a parenthesis in the text. If there is no parenthesis, then it should be
     # assumed that the javadoc role is not attempting to link to a method.
@@ -201,6 +221,109 @@ def javadoc_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
                                            'correct?')
 
 
+def handle_imports(text, page):
+    # Set a class to check variable equal to the text. If there is a hash in the text, then we will change the value to
+    # just the part before the hash. Otherwise it is safe to assume that this is referencing a class.
+    class_to_check = text
+    # Create a string to store the inside arguments.
+    inside_arguments = ''
+    # The text after the hash. We will need to re-append it later.
+    method_text = ''
+    # If there are parenthesis, then we have a method to work with.
+    if '(' in text and ')' in text:
+        # Partition out the part from before the method hash.
+        class_to_check = text.rpartition('#')[0]
+        # Set the arguments equal to the text inside the parenthesis.
+        inside_arguments = text.rpartition('(')[2].rpartition(')')[0]
+        # We only really want the part before the parenthesis for this.
+        method_text = '#' + text.rpartition('#')[2].rpartition('(')[0]
+    # If there is more than one dot in class_to_check, then it is likely that this is an absolute javadoc reference. We
+    # also need to check if there are any arguments, if there is, then it is possible that one of the arguments
+    # reference an import. Unfortunately, there is no reliable way to see if an argument references an import right
+    # here, so we'll have to do it later on.
+    if class_to_check.count('.') > 1 and not inside_arguments:
+        return text
+    # Import the specified javadoc class, if necessary. Also appends the method text.
+    imported_class = check_against_imports(class_to_check, page) + method_text
+    # If there is no method, then there are no arguments we have to match up with and we can return here.
+    if not method_text:
+        return imported_class
+    # Initialize an imported arguments variable to store our imported arguments (obviously :P).
+    imported_arguments = '('
+    # If there is a comma in the inside arguments, then we have to deal with multiple arguments
+    if ',' in inside_arguments:
+        # For every argument separated by a comma, check if it is possible an import statement.
+        for argument in inside_arguments.split(','):
+            # If there is more than one dot in this argument, then it is likely an absolute reference. We can just add
+            # the normal argument.
+            if argument.count('.') > 1:
+                imported_arguments += argument + ','
+                continue
+            # Append the imported javadoc argument to the imported arguments, as well as a comma.
+            imported_arguments += check_against_imports(argument, page) + ','
+        # Remove the last comma, as it is an extra comma we do not want to include.
+        imported_arguments = imported_arguments[:-1]
+    # Else we have a single argument, or no argument!
+    else:
+        # If there is an actual argument, then check it against the imports. If there are no arguments, then it is safe
+        # to continue on.
+        if inside_arguments:
+            # If there is only one dot or no dots, then it is possible that this is referencing an import.
+            if inside_arguments.count('.') <= 1:
+                # Now we can check the argument against the imported arguments.
+                imported_arguments += check_against_imports(inside_arguments, page)
+            # Else it is not referencing an import and we can add it as-is.
+            else:
+                imported_arguments += inside_arguments
+    # Finally append a closing parenthesis here.
+    imported_arguments += ')'
+    # Now return the imported class and the method arguments.
+    return imported_class + imported_arguments
+
+
+def check_against_imports(text_to_check, page):
+    # We need to remove any generics when we are comparing the text_to_check against the imports. So we copy the generic
+    # text here to be re-applied later.
+    generic_text = ''
+    # If there is an arrow in the text_to_check, then we know we have generics.
+    if '<' in text_to_check:
+        # Set the generic text to what's inside the generic. We also will need to re-apply the arrows after
+        # partitioning.
+        generic_text = '<' + text_to_check.rpartition('<')[2].rpartition('>')[0] + '>'
+        # Set the original text_to_check to the part before the generic.
+        text_to_check = text_to_check.rpartition('<')[0]
+
+    # Iterate through the javadoc directives to find the correct page and import for the text_to_check.
+    for javadoc_directive in javadoc_imports.iteritems():
+        # If the directive page is not equal to the specified page, ignore this directive.
+        if javadoc_directive[0] is not page:
+            continue
+        # Now that we have the correct page, we need to iterate through the directive imports to find one that matches
+        # our text_to_check.
+        for javadoc_directive_import in javadoc_directive[1]:
+            # We need to get the last object for the import so that we can attempt to match it against the
+            # text_to_check.
+            last_object = javadoc_directive_import.rpartition('.')[2]
+            # We need the second to last object in-case this import references an internal class.
+            second_to_last_object = javadoc_directive_import.rpartition('.')[0].rpartition('.')[2]
+            # If the first character of the second to last object is a capital letter, then we know we are referencing
+            # an internal class. We need to check the text as such.
+            if second_to_last_object[0].isupper():
+                # Check if the text is equal to the import. If it is, then we have the correct import.
+                if text_to_check == second_to_last_object + '.' + last_object:
+                    # Return the import plus the generic text, if there was any.
+                    return javadoc_directive_import + generic_text
+            # Else, it is safe to assume that this is a standard object reference, not an internal one.
+            else:
+                # Check if the text is equal to the last object from the import. If it is, then we have the correct
+                # import.
+                if text_to_check == last_object:
+                    # Return the import plus the generic text, if there was any.
+                    return javadoc_directive_import + generic_text
+    # If we could not match it against any imports, return the text.
+    return text_to_check
+
+
 def error(inliner, lineno, rawtext, reason):
     # Print an error message with the text that caused the error and the reason why the error occurred
     error_message = inliner.reporter.error('An error has occurred while attempting to evaluate the string "{0}"! {1}'
@@ -209,7 +332,7 @@ def error(inliner, lineno, rawtext, reason):
 
 
 def jd_link(javadoc_links, text_to_check):
-    # Iterate through each link in the specified javadoc links, see if that's the link we want to use
+    # Iterate through each link in the specified javadoc links, see if that's the link we want to use.
     for link in javadoc_links[0]:
         # Remove any spaces and new lines.
         link = link.replace('\n', '').replace(' ', '')
@@ -327,7 +450,19 @@ def strip_generic_url(url):
 def handle_return(javadoc_text, url, rawtext, options, dump_links):
     # If we need to dump the links, then do so.
     if dump_links:
-        # Open the file in a mode, write the javadoc display text and the url text to the file.
+        # Open the file in 'a' mode, write the javadoc display text and the url text to the file.
         open('javadoc_dump.txt', 'a').write(javadoc_text + '=' + url + '\n')
 
     return [nodes.reference(rawtext, utils.unescape(javadoc_text), refuri=strip_generic_url(url), **options)], []
+
+
+def purge_imports(app, env, docname):
+    # If the doc has any imports, purge them/
+    if docname in javadoc_imports.keys():
+        # Delete any imports for the file.
+        del javadoc_imports[docname]
+
+
+def merge_imports(env, docnames, other):
+    # Update our imports.
+    javadoc_imports.update(other)

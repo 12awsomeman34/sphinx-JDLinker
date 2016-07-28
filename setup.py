@@ -9,7 +9,7 @@ Please see the `GitHub repository <https://github.com/12AwsomeMan34/sphinx-JDLin
 setup(
     name='sphinx-JDLinker',
     packages=['jdlinker'],
-    version='1.0.9',
+    version='1.1',
     license='MIT',
     description='A sphinx extension designed to allow you to create links to a JavaDoc website from your sphinx'
                 ' documentation.',
