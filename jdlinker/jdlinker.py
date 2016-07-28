@@ -155,6 +155,11 @@ def javadoc_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
     if not jd_url_link:
         return error(inliner, lineno, rawtext, 'Could not find an appropriate javadoc url for the specified role!')
 
+    # Check if this is actually a package reference. If so, then link to that instead.
+    if not last_object[0].isupper():
+        return handle_return(text, jd_url_link + text.replace('.', '/') + '/package-summary.html', rawtext, options,
+                             dump_links)
+
     # Now we can see if method_text and field_text are empty or not. If they are both empty, then we know we are
     # referencing an object and not a method or field. If is_internal is False, then we know we have a regular link to
     # a normal object. The JD link will reflect that.
