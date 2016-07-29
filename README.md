@@ -26,17 +26,23 @@ Most projects should already easily meet these requirements anyway, so no worrie
 ## Usage
 Using sphinx-JDLinker is relatively simple. The first thing you must do is add the `javadoc_links` config option to
 your `conf.py`:
+
 ```python
-javadoc_links = ['http://myjavadocwebsite.com/ ; my.root.package']
+javadoc_links = {'http://myjavadocwebsite.com/': ['my.root.package']}
 ```
-Now let's explain this a bit. The `javadoc_links` variable must be a list, storing the JavaDoc url as well as the 'root
-package'. The root package is essentially what sphinx-JDLinker uses to identify a JavaDoc reference, so that the
-linking to multiple JavaDoc websites does not collide. So if your Java files begin at `com.my.package`, then when
+
+Now let's explain this a bit. The `javadoc_links` variable must be a dictionary, storing the JavaDoc url as well as a
+list of 'root packages'. The root package is essentially what sphinx-JDLinker uses to identify a JavaDoc reference, so
+that the linking to multiple JavaDoc websites does not collide. So if your Java files begin at `com.my.package`, then when
 sphinx-JDLinker sees a JavaDoc reference in your documentation that begins with `com.my.package`, it will know that
 you're attempting to link to the corresponding `com.my.package` JavaDoc website.
 
-The website and the root package is split by a semicolon (`;`). Note that any spacing is ignored and is primarily used
-here for readability.
+The root packages are stored as a list as to allow multiple root packages. An example of multiple root packages may be
+found below:
+
+```python
+javadoc_links = {'http://myjavadocwebsite.com/': ['my.root.package', 'some.other.package']}
+```
 
 Now that we've set the config option, it's time to create JavaDoc links in our sphinx documentation. We need to create
 a JavaDoc role:
