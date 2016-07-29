@@ -1,13 +1,13 @@
-import jdlinker
+from . import jdlinker
 from os import remove, path
 
-__version = '1.1'
+__version = '1.2'
 
 
 def setup(app):
     app.info('Initializing sphinx-JDLinker version ' + __version + '!')
     app.add_role('javadoc', jdlinker.javadoc_role)
-    app.add_config_value('javadoc_links', [], 'env')
+    app.add_config_value('javadoc_links', {}, 'env')
     app.add_config_value('javadoc_dump', False, 'env')
     app.add_directive('javadoc-import', jdlinker.JavaDocImportDirective)
     app.connect('env-purge-doc', jdlinker.purge_imports)

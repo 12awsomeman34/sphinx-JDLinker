@@ -299,7 +299,7 @@ def check_against_imports(text_to_check, page):
         text_to_check = text_to_check.rpartition('<')[0]
 
     # Iterate through the javadoc directives to find the correct page and import for the text_to_check.
-    for javadoc_directive in javadoc_imports.iteritems():
+    for javadoc_directive in javadoc_imports.items():
         # If the directive page is not equal to the specified page, ignore this directive.
         if javadoc_directive[0] is not page:
             continue
@@ -337,19 +337,11 @@ def error(inliner, lineno, rawtext, reason):
 
 
 def jd_link(javadoc_links, text_to_check):
-    # Iterate through each link in the specified javadoc links, see if that's the link we want to use.
-    for link in javadoc_links[0]:
-        # Remove any spaces and new lines.
-        link = link.replace('\n', '').replace(' ', '')
-        # Split the config link by the semicolon. This should split into two components:
-        # 1. The javadoc url.
-        # 2. The primary package for the javadoc url.
-        config_components = link.split(';')
-        # Take the 'primary package' for the javadoc url and check it against the text before the parenthesis. If
-        # this is true, then we have the correct javadoc url.
-        if config_components[1] in text_to_check:
-            # Now return the javadoc url.
-            return config_components[0]
+    # For each value in the javadoc_links dictionary.
+    for value in javadoc_links.items():
+        # If the text_to_check starts with the root package, then we have the correct JavaDoc url.
+        if text_to_check.startswith(value[1]):
+            return value[0]
 
 
 def in_method_link(inside_parenthesis_text):
@@ -462,7 +454,7 @@ def handle_return(javadoc_text, url, rawtext, options, dump_links):
 
 
 def purge_imports(app, env, docname):
-    # If the doc has any imports, purge them/
+    # If the doc has any imports, purge them.
     if docname in javadoc_imports.keys():
         # Delete any imports for the file.
         del javadoc_imports[docname]
