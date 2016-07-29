@@ -44,7 +44,13 @@ found below:
 javadoc_links = {'http://myjavadocwebsite.com/': ['my.root.package', 'some.other.package']}
 ```
 
-Now that we've set the config option, it's time to create JavaDoc links in our sphinx documentation. We need to create
+Now we need to add sphinx-JDLinker to sphinx itself. In your `conf.py` file, add `jdlinker` to your extensions:
+
+```python
+extensions = ['jdlinker']
+```
+
+Now that we've set the config options, it's time to create JavaDoc links in our sphinx documentation. We need to create
 a JavaDoc role:
 
 ```
@@ -98,7 +104,7 @@ Now when we want to link to `MyClass` or `MyOtherClass`, it's as simple as this:
 :javadoc:`MyOtherClass`
 ```
 
-Imports will also work for method arguments:
+Imports will also work for method parameters:
 
 ```
 :javadoc:`MyClass#myMethod(MyOtherClass)`
