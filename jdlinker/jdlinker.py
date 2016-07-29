@@ -339,9 +339,11 @@ def error(inliner, lineno, rawtext, reason):
 def jd_link(javadoc_links, text_to_check):
     # For each value in the javadoc_links dictionary.
     for value in javadoc_links.items():
-        # If the text_to_check starts with the root package, then we have the correct JavaDoc url.
-        if text_to_check.startswith(value[1]):
-            return value[0]
+        # Iterate through the root packages.
+        for root in value[1]:
+            # If the text_to_check starts with the root package, then we have the correct JavaDoc url.
+            if text_to_check.startswith(root):
+                return value[0]
 
 
 def in_method_link(inside_parenthesis_text):
