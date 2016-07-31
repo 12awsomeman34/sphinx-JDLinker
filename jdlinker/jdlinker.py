@@ -450,7 +450,8 @@ def handle_return(javadoc_text, url, rawtext, options, dump_links):
     # If we need to dump the links, then do so.
     if dump_links:
         # Open the file in 'a' mode, write the javadoc display text and the url text to the file.
-        open('javadoc_dump.txt', 'a').write(javadoc_text + '=' + url + '\n')
+        open('javadoc_dump.txt', 'a').write(rawtext.replace('\n', '').replace(' ', '') + '=' + javadoc_text + '=' + url
+                                            + '\n')
 
     return [nodes.reference(rawtext, utils.unescape(javadoc_text), refuri=strip_generic_url(url), **options)], []
 
