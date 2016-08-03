@@ -248,6 +248,8 @@ def handle_imports(text, page):
     inside_arguments = ''
     # The text after the hash. We will need to re-append it later.
     method_text = ''
+    # The text after the hash, if this is a field.
+    field_text = ''
     # If there are parenthesis, then we have a method to work with.
     if '(' in text and ')' in text:
         # Partition out the part from before the method hash.
@@ -260,21 +262,29 @@ def handle_imports(text, page):
     elif '#' in text:
         # Partition out the class from behind the hash.
         class_to_check = text.rpartition('#')[0]
-        # Partition out the field from after the hash. This is still stored inside the method_text variable.
-        method_text = '#' + text.rpartition('#')[2]
+        # Partition out the field from after the hash.
+        field_text = '#' + text.rpartition('#')[2]
     # If there is more than one dot in class_to_check, then it is likely that this is an absolute javadoc reference. We
     # also need to check if there are any arguments, if there is, then it is possible that one of the arguments
     # reference an import. Unfortunately, there is no reliable way to see if an argument references an import right
     # here, so we'll have to do it later on.
     if class_to_check.count('.') > 1 and not inside_arguments:
         return text
-    # Import the specified javadoc class, if necessary. Also appends the method text.
-    imported_class = check_against_imports(class_to_check, page) + method_text
-    # If there is no method, then there are no arguments we have to match up with and we can return here.
-    if not method_text:
+    # Import the specified javadoc class, if necessary.
+    imported_class = check_against_imports(class_to_check, page)
+    # If there is a method, then we will want to append that and continue on.
+    if method_text:
+        imported_class += method_text
+    # If there is a field, then we will want to append that and return, as fields cannot have imports of their own.
+    elif field_text:
+        imported_class += field_text
         return imported_class
-    # Else if there is no arguments, then it is possible we received a field, and a field would not have arguments.
-    elif not inside_arguments:
+    # If there are no arguments, then it will be fine to return here.
+    if not inside_arguments:
+        # If there is a method, then we will want to append the method parenthesis as well.
+        if method_text:
+            return imported_class + '()'
+        # Else, just return the normal imported class.
         return imported_class
     # Initialize an imported arguments variable to store our imported arguments (obviously :P).
     imported_arguments = '('
