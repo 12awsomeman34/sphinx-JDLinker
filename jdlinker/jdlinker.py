@@ -29,7 +29,21 @@ def javadoc_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
     dump_links = inliner.document.settings.env.app.config.javadoc_dump
 
     # Replace any new lines and spaces. This will allow input spanning multiple lines and the spaces have no real
-    # effect in the calculation of the display text and the final javadoc link.
+    # effect in the calculation of the display text and the final javadoc link. The only exception to this is generics,
+    # as in a generic, we want to ignore whitespace for display.
+    if '<' and '>' in text:
+        # For every generic in the text, we'll want to replace the original generic with a modified one that has any
+        # spaces converted to an asterisk. This it to avoid any potential miscalculation later on. We'll convert the
+        # asterisk to a space when displaying the JD link and the generic will end up being omitted in the url anyway.
+        for generic in text.split('<'):
+            # Get the original generic, by getting the closing arrow. We'll need this to replace the original generic
+            # with a new generic.
+            original_generic = generic.rpartition('>')[0]
+            # Replace any generic spaces with an asterisk.
+            generic = original_generic.replace(' ', '*')
+            # Replace the original generic with our new generic.
+            text = text.replace('<' + original_generic + '>', '<' + generic + '>')
+    # Now replace everything else as-is.
     text = text.replace('\n', '').replace(' ', '')
 
     # Handle any possible imports.
@@ -242,6 +256,12 @@ def handle_imports(text, page):
         inside_arguments = text.rpartition('(')[2].rpartition(')')[0]
         # We only really want the part before the parenthesis for this.
         method_text = '#' + text.rpartition('#')[2].rpartition('(')[0]
+    # Else if there are no parenthesis in the text, but there is a hash, then assume that this is a field.
+    elif '#' in text:
+        # Partition out the class from behind the hash.
+        class_to_check = text.rpartition('#')[0]
+        # Partition out the field from after the hash. This is still stored inside the method_text variable.
+        method_text = '#' + text.rpartition('#')[2]
     # If there is more than one dot in class_to_check, then it is likely that this is an absolute javadoc reference. We
     # also need to check if there are any arguments, if there is, then it is possible that one of the arguments
     # reference an import. Unfortunately, there is no reliable way to see if an argument references an import right
@@ -252,6 +272,9 @@ def handle_imports(text, page):
     imported_class = check_against_imports(class_to_check, page) + method_text
     # If there is no method, then there are no arguments we have to match up with and we can return here.
     if not method_text:
+        return imported_class
+    # Else if there is no arguments, then it is possible we received a field, and a field would not have arguments.
+    elif not inside_arguments:
         return imported_class
     # Initialize an imported arguments variable to store our imported arguments (obviously :P).
     imported_arguments = '('
@@ -447,6 +470,9 @@ def strip_generic_url(url):
 
 
 def handle_return(javadoc_text, url, rawtext, options, dump_links):
+    # Now replace any generic asterisks with spaces.
+    javadoc_text = javadoc_text.replace('*', ' ')
+
     # If we need to dump the links, then do so.
     if dump_links:
         # Open the file in 'a' mode, write the javadoc display text and the url text to the file.
