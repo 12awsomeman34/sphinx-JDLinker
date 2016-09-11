@@ -115,3 +115,9 @@ Imports will also work for method parameters:
 An advanced debug option is available that you may specify in your `conf.py` file. If enabled, the `javadoc_dump`
 option will dump all of the JavaDoc references into a `javadoc_dump.txt` file. It is highly recommended to keep this
 disabled in production!
+
+## Updating
+
+If there comes to be a time that the documentation project's JavaDoc links need to be updated, you may use
+[jdlinker-parser](https://github.com/12AwsomeMan34/jdlinker-parser) to help identify what needs to be updated.
+It will tell you what specific JavaDoc links that could not be found, as well as where the link was found.
