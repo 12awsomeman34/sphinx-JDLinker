@@ -485,7 +485,7 @@ def handle_return(inliner, lineno, text, javadoc_text, url, rawtext, options, du
 
     # If we need to dump the links, then do so.
     if dump_links:
-        # Open the file in 'a' mode, write the javadoc display text and the url text to the file.
+        # Open the file in 'a' mode, write various javadoc info.
         open('javadoc_dump.txt', 'a').write(text.replace('\n', '').replace(' ', '') + '=' +
                                             inliner.document.settings.env.docname + '=' + str(lineno) + '=' +
                                             javadoc_text + '=' + url + '\n')
