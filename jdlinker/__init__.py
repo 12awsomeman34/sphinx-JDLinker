@@ -1,7 +1,7 @@
 from . import jdlinker
 from os import remove, path
 
-__version = '1.3'
+__version = '1.3.1'
 
 
 def setup(app):
