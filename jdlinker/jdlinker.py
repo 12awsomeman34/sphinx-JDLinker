@@ -308,13 +308,22 @@ def handle_imports(text, page):
     if ',' in inside_arguments:
         # For every argument separated by a comma, check if it is possible an import statement.
         for argument in inside_arguments.split(','):
+            # If the argument has ellipses, then we want to remove them and add them back after the import check.
+            has_ellipses = False
+            if '...' in argument:
+                has_ellipses = True
+                argument = argument[:-3]
             # If there is more than one dot in this argument, then it is likely an absolute reference. We can just add
             # the normal argument.
             if argument.count('.') > 1:
                 imported_arguments += argument + ','
                 continue
             # Append the imported javadoc argument to the imported arguments, as well as a comma.
-            imported_arguments += check_against_imports(argument, page) + ','
+            imported_arguments += check_against_imports(argument, page)
+            if has_ellipses:
+                imported_arguments += '...,'
+            else:
+                imported_arguments += ','
         # Remove the last comma, as it is an extra comma we do not want to include.
         imported_arguments = imported_arguments[:-1]
     # Else we have a single argument, or no argument!
@@ -322,13 +331,23 @@ def handle_imports(text, page):
         # If there is an actual argument, then check it against the imports. If there are no arguments, then it is safe
         # to continue on.
         if inside_arguments:
+            # If the argument has ellipses, then we want to remove them and add them back after the import check.
+            # (copied from above)
+            has_ellipses = False
+            if '...' in inside_arguments:
+                has_ellipses = True
+                inside_arguments = inside_arguments[:-3]
             # If there is only one dot or no dots, then it is possible that this is referencing an import.
             if inside_arguments.count('.') <= 1:
                 # Now we can check the argument against the imported arguments.
                 imported_arguments += check_against_imports(inside_arguments, page)
+                if has_ellipses:
+                    imported_arguments += '...'
             # Else it is not referencing an import and we can add it as-is.
             else:
                 imported_arguments += inside_arguments
+                if has_ellipses:
+                    imported_arguments += '...'
     # Finally append a closing parenthesis here.
     imported_arguments += ')'
     # Now return the imported class and the method arguments.
@@ -459,7 +478,12 @@ def handle_display(argument):
             # it back. This is needed as we partition out the period from the regular argument, and we do not
             # want to accidentally partition the period from the generic instead (in the case of an internal
             # generic).
-            display_text += argument.rpartition('<')[0].rpartition('.')[2] + '<' + argument_generic + '>'
+            # However, if this is an internal argument, then we need to work around that.
+            if argument.rpartition('<')[0].rpartition('.')[0].rpartition('.')[2][0].isupper():
+                display_text += argument.rpartition('<')[0].rpartition('.')[0].rpartition('.')[2] + '.' +\
+                                argument.rpartition('<')[0].rpartition('.')[2] + '<' + argument_generic + '>'
+            else:
+                display_text += argument.rpartition('<')[0].rpartition('.')[2] + '<' + argument_generic + '>'
             # If there is an ellipsis, we want to re-add it back to the end of the new inside text.
             if '...' in argument:
                 display_text += '..., '
@@ -469,8 +493,14 @@ def handle_display(argument):
         else:
             # If there are ellipsis in the argument, we need special handling.
             if '...' in argument:
-                # Partition out the ellipsis so that we may partition out the display object.
-                display_text += argument.rpartition('...')[0].rpartition('.')[2] + '..., '
+                # If the ellipsis is for an internal class, you guessed it we need special handling.
+                if argument.rpartition('...')[0].rpartition('.')[0].rpartition('.')[2][0].isupper():
+                    # So we need to remove the ellipsis WHILE retaining the internal class...
+                    display_text += argument.rpartition('...')[0].rpartition('.')[0].rpartition('.')[2] + '.' +\
+                        argument.rpartition('...')[0].rpartition('.')[2] + '..., '
+                else:
+                    # Partition out the ellipsis normally.
+                    display_text += argument.rpartition('...')[0].rpartition('.')[2] + '..., '
             else:
                 # Partition using the dot to get the object we will display. Add a comma and a space for any
                 # consecutive arguments.
