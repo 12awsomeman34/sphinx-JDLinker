@@ -1,11 +1,12 @@
 from . import jdlinker
 from os import remove, path
+from sphinx.util import logging
 
-__version = '1.3.1'
+__version = '1.4'
 
 
 def setup(app):
-    app.info('Initializing sphinx-JDLinker version ' + __version + '!')
+    logging.getLogger(__name__).info('Initializing sphinx-JDLinker version ' + __version + '!')
     app.add_role('javadoc', jdlinker.javadoc_role)
     app.add_config_value('javadoc_links', {}, 'env')
     app.add_config_value('javadoc_dump', False, 'env')
