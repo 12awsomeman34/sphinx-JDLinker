@@ -16,7 +16,7 @@ class JavaDocImportDirective(Directive):
                 for javadoc_linker in self.state.document.settings.env.app.config.javadoc_links.values():
                     if len(javadoc_linker) == 2:
                         if shorthand == javadoc_linker[1]:
-                            full_import = javadoc_linker[0] + jdlink.rpartition(':')[2]
+                            full_import = javadoc_linker[0] + '.' + jdlink.rpartition(':')[2]
                             new_content.append(full_import)
                             continue
             new_content.append(jdlink)

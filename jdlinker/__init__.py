@@ -1,7 +1,7 @@
 
 from . import jdlinker
 
-__version = '2.0'
+__version = '2.0.1'
 
 def setup(app):
     app.add_role('javadoc', jdlinker.javadoc_role)
